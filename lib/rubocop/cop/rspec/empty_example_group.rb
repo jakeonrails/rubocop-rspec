@@ -41,19 +41,34 @@ module RuboCop
         PATTERN
 
         def_node_search :contains_example?, <<-PATTERN
-          (send _ {
-            #{Examples::ALL.to_node_pattern}
-            :it_behaves_like
-            :it_should_behave_like
-            :include_context
-            :include_examples
-          } ...)
+          {
+            (send _ {
+              #{Examples::ALL.to_node_pattern}
+              :it_behaves_like
+              :it_should_behave_like
+              :include_context
+              :include_examples
+            } ...)
+            (send _ #custom_include? ...)
+          }
         PATTERN
 
         def on_block(node)
           return unless example_group?(node) && !contains_example?(node)
 
           add_offense(node.children.first, :expression)
+        end
+
+        private
+
+        def custom_include?(method_name)
+          custom_include_methods.include?(method_name)
+        end
+
+        def custom_include_methods
+          cop_config
+            .fetch('CustomIncludeMethods', [])
+            .map(&:to_sym)
         end
       end
     end
